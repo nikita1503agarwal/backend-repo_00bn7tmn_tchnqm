@@ -11,38 +11,59 @@ Model name is converted to lowercase for the collection name:
 - BlogPost -> "blogs" collection
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, HttpUrl, EmailStr
+from typing import Optional, List, Literal
 
-# Example schemas (replace with your own):
+# Core schemas for the Stray Animal Welfare app
 
-class User(BaseModel):
+class Animal(BaseModel):
     """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
+    Animals available for adoption or in shelter care
+    Collection name: "animal"
     """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    name: str = Field(..., description="Animal name (if known)")
+    species: Literal["dog", "cat", "bird", "other"] = Field(..., description="Species")
+    age: Optional[str] = Field(None, description="Approximate age, e.g., '2 years' or '6 months'")
+    gender: Optional[Literal["male", "female", "unknown"]] = Field("unknown", description="Gender if known")
+    description: Optional[str] = Field(None, description="Temperament, health, etc.")
+    status: Literal["adoptable", "rescued", "fostered", "medical", "other"] = Field("adoptable", description="Current status")
+    location: Optional[str] = Field(None, description="City/Area")
+    photo_url: Optional[HttpUrl] = Field(None, description="Public link to animal photo")
 
-class Product(BaseModel):
+class Sighting(BaseModel):
     """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
+    Citizen-reported stray animal sightings
+    Collection name: "sighting"
     """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+    species: Literal["dog", "cat", "bird", "other"] = Field(..., description="Species seen")
+    location_text: str = Field(..., description="Street/landmark/city")
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
+    notes: Optional[str] = Field(None, description="Behavior, condition, collar, etc.")
+    reporter_name: Optional[str] = Field(None, description="Your name")
+    reporter_contact: Optional[str] = Field(None, description="Phone or email")
+    photo_url: Optional[HttpUrl] = Field(None, description="Photo link if available")
+    status: Literal["new", "in_progress", "resolved"] = Field("new")
+    urgency: Optional[Literal["low", "medium", "high"]] = Field("medium")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Volunteer(BaseModel):
+    """
+    Volunteer sign-ups
+    Collection name: "volunteer"
+    """
+    name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    areas_of_interest: List[str] = Field(default_factory=list, description="e.g., rescue, foster, transport, outreach")
+    availability: Optional[str] = Field(None, description="Days/times available")
+    notes: Optional[str] = None
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Donation(BaseModel):
+    """
+    Donation pledges or contact
+    Collection name: "donation"
+    """
+    name: str
+    email: Optional[EmailStr] = None
+    amount: Optional[float] = Field(None, ge=0)
+    message: Optional[str] = None
